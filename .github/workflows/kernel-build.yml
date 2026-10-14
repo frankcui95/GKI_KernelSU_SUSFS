@@ -185,7 +185,7 @@ jobs:
         run: |
           mkdir -p artifacts
           find /tmp/gki-build -name "android*.zip" -type f -exec cp {} artifacts/ \;
-          find /tmp/gki-build -name "android*.img" -type f -exec cp {} artifacts/ \;
+          find /tmp/gki-build -name "android*-boot.img" -type f -exec cp {} artifacts/ \;
           find /tmp/gki-build -name "task_mmu.c" -type f -exec cp {} artifacts/ \;
           
 
