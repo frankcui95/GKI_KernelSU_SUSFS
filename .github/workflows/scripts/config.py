@@ -54,7 +54,7 @@ class KernelVersion(Enum):
 class KSUVersion(Enum):
     STABLE = "Stable(标准)"
     DEV = "Dev(开发)"
-    NONE = None(无)"
+    NONE = "None(无)"
 
 
 ANDROID_KERNEL_MAP = {
@@ -96,6 +96,8 @@ LEGACY_FIXES = {
 OP8E_PATCH_URL = "https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/dev/hmbird_patch.c"
 KPM_PATCH_URL = "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux"
 
+# Droidspaces 仓库配置
+DROIDSPACES_CONFIG = {"repo_url": "https://github.com/ravindu644/Droidspaces-OSS.git"}
 
 @dataclass
 class BuildConfig:

@@ -50,7 +50,7 @@ on:
           - Stable(标准)
           - Dev(开发)
           - None(无)
-        default: None(无)
+        default: Stable(标准)
       kernelsu_commit:
         description: '指定 SukiSU commit hash (可选)'
         required: false
@@ -65,7 +65,7 @@ on:
         description: '自定义版本名称 (可选)'
         required: false
         type: string
-        default: ''
+        default: 'droidspaces6'
       use_zram:
         description: '启用 ZRAM (LZ4KD)'
         required: true
@@ -88,16 +88,6 @@ on:
         default: false
       set_defbbr:
         description: '设置 BBR 为默认拥塞算法'
-        required: true
-        type: boolean
-        default: false
-      make_release:
-        description: '创建 GitHub Release'
-        required: true
-        type: boolean
-        default: true
-      send_telegram:
-        description: '发送 Telegram 通知'
         required: true
         type: boolean
         default: false

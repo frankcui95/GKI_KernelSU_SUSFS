@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 from config import (BuildConfig, KSU_REPO_CONFIG, SUSFS_REPO_CONFIG, SUKISU_PATCH_REPO_CONFIG,
                    ANYKERNEL_CONFIG, KERNEL_PATCHES_CONFIG, BBG_CONFIG, TOOLCHAIN_CONFIG,
-                   LEGACY_FIXES, OP8E_PATCH_URL, KPM_PATCH_URL)
+                   LEGACY_FIXES, OP8E_PATCH_URL, KPM_PATCH_URL, DROIDSPACES_CONFIG)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -96,44 +96,63 @@ CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y
 CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
 CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
 
-# === Droidspaces Config ===
+# Kernel configurations for full DroidSpaces support for GKI
+# Copyright (C) 2026 ravindu644 <droidcasts@protonmail.com>
+
 # IPC
 CONFIG_SYSVIPC=y
 CONFIG_POSIX_MQUEUE=y
 
-# 命名空间
+# Namespaces
 CONFIG_IPC_NS=y
 CONFIG_PID_NS=y
 
-# 硬件访问
+# HW Access Support
 CONFIG_DEVTMPFS=y
 
-# 用户命名空间(不是必备, 但是docker,KDE桌面必须要开)
-CONFIG_USER_NS=y
-#网络(Docker/NAT支持)
+# Networking (Enhanced NAT support)
 CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y
 
-#UFW 支持
+# --- Below configs are optional but recommended ---
+
+# Fix for docker unsafe procfs error
+CONFIG_USER_NS=y
+
+# IPv6 in NAT mode (NAT66)
+CONFIG_IP6_NF_NAT=y
+CONFIG_IP6_NF_TARGET_MASQUERADE=y
+
+# Macvlan mode (--net=macvlan). kABI-safe: on a 5.15 GKI tree it changed none
+# of the 8423 exported symbols, and the driver is self-contained
+CONFIG_MACVLAN=y
+
+# UFW support
 CONFIG_NETFILTER_XT_TARGET_REJECT=y
 CONFIG_NETFILTER_XT_TARGET_LOG=y
 CONFIG_NETFILTER_XT_MATCH_RECENT=y
 
-#Fail2ban 支持
+# Fail2ban support
 CONFIG_IP_SET=y
 CONFIG_IP_SET_HASH_IP=y
 CONFIG_IP_SET_HASH_NET=y
 CONFIG_NETFILTER_XT_SET=y
 
-# 在 tmpfs 上启用 xattr 支持
-# (运行 NixOS 必备选项)
+# Enable xattr, posix acl support on tmpfs
+# For NixOS support
 CONFIG_TMPFS_POSIX_ACL=y
 CONFIG_TMPFS_XATTR=y
 
-#内存限制, CPU限制
-CONFIG_CFS_BANDWIDTH=y
-CONFIG_CGROUP_PIDS=y
+# Resource limits: --cpus and --pids-limit. CONFIG_MEMCG is already on in GKI.
+# These two BREAK the kABI and no patch covers them: they resize scheduler and
+# cgroup structures, which changes the CRC of thousands of exported symbols.
+# Stock vendor modules then refuse to load and the device bootloops.
+# Leave them commented out unless you rebuild EVERY kernel module from the
+# same source and flash vendor_boot, vendor_dlkm and system_dlkm together
+# with the new boot.img, all at once.
+# CONFIG_CFS_BANDWIDTH=y
+# CONFIG_CGROUP_PIDS=y
 
-### === NTsync ===
+### === NTSync ===
 # CONFIG_NTSYNC IS NOT SET
 """
 
@@ -151,6 +170,7 @@ CONFIG_CGROUP_PIDS=y
         self.sukisu_patch_dir = self.workspace / "SukiSU_patch"
         self.anykernel_dir = self.workspace / "AnyKernel3"
         self.kernel_patches_dir = self.workspace / "kernel_patches"
+        self.droidspaces_oss_dir = self.workspace / "Droidspaces-OSS"
         self.toolchain_dir = self.workspace / "toolchain"
         self.mkbootimg_dir = self.workspace / "mkbootimg"
         self._setup_env()
@@ -188,6 +208,7 @@ CONFIG_CGROUP_PIDS=y
             ("SukiSU Patch", self.sukisu_patch_dir, SUKISU_PATCH_REPO_CONFIG['repo_url'], None),
             ("AnyKernel3", self.anykernel_dir, ANYKERNEL_CONFIG['repo_url'], ANYKERNEL_CONFIG['branch']),
             ("Kernel Patches", self.kernel_patches_dir, KERNEL_PATCHES_CONFIG['repo_url'], None),
+            ("Droidspaces", self.droidspaces_oss_dir, DROIDSPACES_CONFIG['repo_url'], None),
         ]:
             if not repo_dir.exists():
                 cmd = f"git clone {url}"
@@ -353,6 +374,20 @@ CONFIG_CGROUP_PIDS=y
         hooks_patch = self.sukisu_patch_dir / "69_hide_stuff.patch"
         if hooks_patch.exists():
             self._run_cmd(f"cp {hooks_patch} . && patch -p1 -F 3 < 69_hide_stuff.patch", check=False)
+
+    def apply_droidspaces_patches(self):
+        logger.info("=== 应用 Droidspaces 补丁 ===")
+        self._chdir(self.work_dir / "common")
+        # TODO: support 6.12 and later
+        hooks_patch = self.droidspaces_oss_dir / "Documentation/resources/kernel-patches/GKI/below-kernel-6.12/001.GKI-below-6.12-fix_sysvipc_kabi_1_2_3.patch"
+        if hooks_patch.exists():
+            logger.info("=== 应用 Droidspaces 001 补丁 ===")
+            self._run_cmd(f"cp {hooks_patch} ./droidspaces_001.patch && patch -p1 < droidspaces_001.patch", check=False)
+            if self.config.kernel_version == "5.10":
+                hooks_patch = self.droidspaces_oss_dir / "Documentation/resources/kernel-patches/GKI/below-kernel-6.12/002.5.10_or_lower_use_android_abi_padding_for_posix_mqueue.patch"
+                if hooks_patch.exists():
+                    logger.info("=== 应用 Droidspaces 002 补丁 ===")
+                    self._run_cmd(f"cp {hooks_patch} ./droidspaces_002.patch && patch -p1 < droidspaces_002.patch", check=False)
 
     def apply_zram_patches(self):
         if not self.config.use_zram:
@@ -784,6 +819,7 @@ CONFIG_CGROUP_PIDS=y
             self.clone_toolchain()
             self.setup_repo_tool()
             self.init_and_sync_kernel()
+            self.apply_droidspaces_patches()
             self.add_kernel_supatch()
             self.add_kernelsu()
             self.add_bbg()
