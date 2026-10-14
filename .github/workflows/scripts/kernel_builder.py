@@ -780,7 +780,8 @@ CONFIG_CGROUP_PIDS=y
             self.add_kernelsu()
             self.add_bbg()
             self.apply_susfs_patches()
-            self.apply_sukisu_patches()
+            # ho need such outdated 69_hide_stuff.patch
+            # self.apply_sukisu_patches()
             self.apply_zram_patches()
             self.apply_task_mmu_fixes()
             self.configure_kernel()
