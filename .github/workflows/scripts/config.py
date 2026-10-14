@@ -99,6 +99,9 @@ KPM_PATCH_URL = "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/h
 # Droidspaces 仓库配置
 DROIDSPACES_CONFIG = {"repo_url": "https://github.com/ravindu644/Droidspaces-OSS.git"}
 
+# Wild Kernels Kernel Patches 仓库配置
+W_KERNEL_PATCHES_CONFIG = {"repo_url": "https://github.com/WildKernels/kernel_patches.git", "alias": "w_kernel_patches" }
+
 @dataclass
 class BuildConfig:
     android_version: str

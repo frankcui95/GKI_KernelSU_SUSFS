@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 from config import (BuildConfig, KSU_REPO_CONFIG, SUSFS_REPO_CONFIG, SUKISU_PATCH_REPO_CONFIG,
                    ANYKERNEL_CONFIG, KERNEL_PATCHES_CONFIG, BBG_CONFIG, TOOLCHAIN_CONFIG,
-                   LEGACY_FIXES, OP8E_PATCH_URL, KPM_PATCH_URL, DROIDSPACES_CONFIG)
+                   LEGACY_FIXES, OP8E_PATCH_URL, KPM_PATCH_URL, DROIDSPACES_CONFIG, W_KERNEL_PATCHES_CONFIG)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -153,7 +153,7 @@ CONFIG_TMPFS_XATTR=y
 # CONFIG_CGROUP_PIDS=y
 
 ### === NTSync ===
-# CONFIG_NTSYNC IS NOT SET
+CONFIG_NTSYNC=y
 """
 
     ZRAM_CONFIG_5_10 = "CONFIG_ZSMALLOC=y\nCONFIG_ZRAM=y\nCONFIG_MODULE_SIG=n\nCONFIG_CRYPTO_LZO=y\nCONFIG_ZRAM_DEF_COMP_LZ4KD=y\n"
@@ -171,6 +171,7 @@ CONFIG_TMPFS_XATTR=y
         self.anykernel_dir = self.workspace / "AnyKernel3"
         self.kernel_patches_dir = self.workspace / "kernel_patches"
         self.droidspaces_oss_dir = self.workspace / "Droidspaces-OSS"
+        self.w_kernel_patches_dir = self.workspace / W_KERNEL_PATCHES_CONFIG['alias']
         self.toolchain_dir = self.workspace / "toolchain"
         self.mkbootimg_dir = self.workspace / "mkbootimg"
         self._setup_env()
@@ -203,17 +204,20 @@ CONFIG_TMPFS_XATTR=y
 
     def clone_repositories(self):
         logger.info("=== 开始克隆仓库 ===")
-        for name, repo_dir, url, branch in [
-            ("SUSFS", self.susfs_dir, SUSFS_REPO_CONFIG['repo_url'], self.config.kernel_branch),
-            ("SukiSU Patch", self.sukisu_patch_dir, SUKISU_PATCH_REPO_CONFIG['repo_url'], None),
-            ("AnyKernel3", self.anykernel_dir, ANYKERNEL_CONFIG['repo_url'], ANYKERNEL_CONFIG['branch']),
-            ("Kernel Patches", self.kernel_patches_dir, KERNEL_PATCHES_CONFIG['repo_url'], None),
-            ("Droidspaces", self.droidspaces_oss_dir, DROIDSPACES_CONFIG['repo_url'], None),
+        for name, repo_dir, url, branch, alias in [
+            ("SUSFS", self.susfs_dir, SUSFS_REPO_CONFIG['repo_url'], self.config.kernel_branch, None),
+            ("SukiSU Patch", self.sukisu_patch_dir, SUKISU_PATCH_REPO_CONFIG['repo_url'], None, None),
+            ("AnyKernel3", self.anykernel_dir, ANYKERNEL_CONFIG['repo_url'], ANYKERNEL_CONFIG['branch'], None),
+            ("Kernel Patches", self.kernel_patches_dir, KERNEL_PATCHES_CONFIG['repo_url'], None, None),
+            ("Droidspaces", self.droidspaces_oss_dir, DROIDSPACES_CONFIG['repo_url'], None, None),
+            ("Wild Kernel Patches", self.w_kernel_patches_dir, W_KERNEL_PATCHES_CONFIG['repo_url'], None, W_KERNEL_PATCHES_CONFIG['alias']),
         ]:
             if not repo_dir.exists():
                 cmd = f"git clone {url}"
                 if branch:
                     cmd += f" -b {branch}"
+                if alias:
+                    cmd += f" {alias}"
                 logger.info(f"克隆 {name}...")
                 self._run_cmd(cmd, check=False)
             else:
@@ -388,6 +392,17 @@ CONFIG_TMPFS_XATTR=y
                 if hooks_patch.exists():
                     logger.info("=== 应用 Droidspaces 002 补丁 ===")
                     self._run_cmd(f"cp {hooks_patch} ./droidspaces_002.patch && patch -p1 < droidspaces_002.patch", check=False)
+
+    def apply_ntsync_patches(self):
+        logger.info("=== 应用 NTSync 补丁 ===")
+        self._chdir(self.work_dir / "common")
+        ntsync_patch = self.w_kernel_patches_dir / "common/ntsync/ntsync_base.patch"
+        ntsync_kabi_patch = self.w_kernel_patches_dir / f"common/ntsync/ntsync_compat_{self.config.android_version}-{self.config.kernel_version}.patch"
+        if ntsync_patch.exists():
+            self._run_cmd(f"cp {ntsync_patch} ./ntsync_base.patch && patch -p1 < ntsync_base.patch", check=False)
+        if ntsync_kabi_patch.exists():
+            self._run_cmd(f"cp {ntsync_kabi_patch} ./ntsync_kabi.patch && patch -p1 < ntsync_kabi.patch", check=False)
+        
 
     def apply_zram_patches(self):
         if not self.config.use_zram:
@@ -820,6 +835,7 @@ CONFIG_TMPFS_XATTR=y
             self.setup_repo_tool()
             self.init_and_sync_kernel()
             self.apply_droidspaces_patches()
+            self.apply_ntsync_patches()
             self.add_kernel_supatch()
             self.add_kernelsu()
             self.add_bbg()
