@@ -59,7 +59,7 @@ on:
         description: '指定 SUSFS commit hash'
         required: false
         type: string
-        default: '687d2d1'
+        default: 'bca0d23'
       custom_version:
         description: '自定义版本名称 (可选)'
         required: false
