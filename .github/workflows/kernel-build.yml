@@ -54,12 +54,12 @@ on:
         description: '指定 SukiSU commit hash (可选)'
         required: false
         type: string
-        default: ''
+        default: '85eb4a9'
       susfs_commit:
         description: '指定 SUSFS commit hash'
         required: false
         type: string
-        default: ''
+        default: '687d2d1'
       custom_version:
         description: '自定义版本名称 (可选)'
         required: false
@@ -184,8 +184,8 @@ jobs:
       - name: Prepare artifacts
         run: |
           mkdir -p artifacts
-          find /tmp/gki-build -name "*.zip" -type f -exec cp {} artifacts/ \;
-          find /tmp/gki-build -name "*.img" -type f -exec cp {} artifacts/ \;
+          find /tmp/gki-build -name "android*.zip" -type f -exec cp {} artifacts/ \;
+          find /tmp/gki-build -name "android*.img" -type f -exec cp {} artifacts/ \;
           find /tmp/gki-build -name "task_mmu.c" -type f -exec cp {} artifacts/ \;
           
 
@@ -194,6 +194,12 @@ jobs:
         with:
           name: kernel-${{ github.event.inputs.android_version }}-${{ github.event.inputs.kernel_version }}-${{ github.event.inputs.sub_level }}
           path: artifacts/*
+      
+      - name: Upload artifacts (debug)
+        uses: actions/upload-artifact@v7
+        with:
+          name: dbg-${{ github.event.inputs.android_version }}-${{ github.event.inputs.kernel_version }}-${{ github.event.inputs.sub_level }}
+          path: artifacts/task_mmu.c
 
       - name: Generate checksums
         run: |
