@@ -54,6 +54,7 @@ class KernelVersion(Enum):
 class KSUVersion(Enum):
     STABLE = "Stable(标准)"
     DEV = "Dev(开发)"
+    NONE = None(无)"
 
 
 ANDROID_KERNEL_MAP = {
@@ -104,6 +105,7 @@ class BuildConfig:
     os_patch_level: str
     kernelsu_version: str = "Stable(标准)"
     kernelsu_commit: Optional[str] = None
+    use_ksu: bool = True
     susfs_commit: Optional[str] = None
     use_zram: bool = False
     use_kpm: bool = True
@@ -175,6 +177,8 @@ class BuildConfig:
             "os_patch_level": self.os_patch_level,
             "kernelsu_version": self.kernelsu_version,
             "kernelsu_commit": self.kernelsu_commit,
+            "use_ksu": self.use_ksu,
+            "susfs_commit": self.susfs_commit,
             "use_zram": self.use_zram,
             "use_kpm": self.use_kpm,
             "use_bbg": self.use_bbg,

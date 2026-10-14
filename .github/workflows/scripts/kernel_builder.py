@@ -286,6 +286,8 @@ CONFIG_CGROUP_PIDS=y
                 f.write("obj-y += hmbird_patch.o\n")
 
     def add_kernelsu(self):
+        if not self.config.use_ksu:
+            return
         logger.info("=== 添加 KernelSU ===")
         self._chdir(self.work_dir)
         setup_url = (f"https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/{self.config.kernelsu_commit}/kernel/setup.sh"
@@ -322,6 +324,8 @@ CONFIG_CGROUP_PIDS=y
                 f.write(content)
 
     def apply_susfs_patches(self):
+        if not self.config.use_ksu:
+            return
         logger.info("=== 应用 SUSFS 补丁 ===")
         self._chdir(self.work_dir)
         common_dir = self.work_dir / "common"
@@ -342,6 +346,8 @@ CONFIG_CGROUP_PIDS=y
                 self._chdir(self.work_dir)
 
     def apply_sukisu_patches(self):
+        if not self.config.use_ksu:
+            return
         logger.info("=== 应用 SukiSU 补丁 ===")
         self._chdir(self.work_dir / "common")
         hooks_patch = self.sukisu_patch_dir / "69_hide_stuff.patch"
@@ -368,6 +374,8 @@ CONFIG_CGROUP_PIDS=y
                 self._run_cmd(f"patch -p1 -F 3 < {p}", check=False)
 
     def apply_task_mmu_fixes(self):
+        if not self.config.use_ksu:
+            return
         logger.info("=== 应用 task_mmu.c 修复 ===")
         self._chdir(self.work_dir / "common")
         task_mmu = Path("fs/proc/task_mmu.c")

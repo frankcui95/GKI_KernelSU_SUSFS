@@ -31,12 +31,12 @@ on:
         description: 'Sub Level 版本'
         required: true
         type: string
-        default: '170'
+        default: '167'
       os_patch_level:
         description: 'OS Patch Level'
         required: true
         type: string
-        default: '2025-01'
+        default: '2024-11'
       revision:
         description: 'Android 12 Revision (可选)'
         required: false
@@ -49,7 +49,8 @@ on:
         options:
           - Stable(标准)
           - Dev(开发)
-        default: Stable(标准)
+          - None(无)
+        default: None(无)
       kernelsu_commit:
         description: '指定 SukiSU commit hash (可选)'
         required: false
@@ -168,6 +169,7 @@ jobs:
           ARGS="$ARGS --os-patch ${{ github.event.inputs.os_patch_level }}"
           [ -n "${{ github.event.inputs.revision }}" ] && ARGS="$ARGS --revision ${{ github.event.inputs.revision }}"
           ARGS="$ARGS --ksu-version ${{ github.event.inputs.kernelsu_version }}"
+          [ "${{ github.event.inputs.kernelsu_version }}" = "None(无)" ] && ARGS="$ARGS --no-ksu"
 
           [ "${{ github.event.inputs.use_zram }}" = "true" ] && ARGS="$ARGS --zram"
           [ "${{ github.event.inputs.use_kpm }}" = "false" ] && ARGS="$ARGS --no-kpm"
@@ -185,21 +187,13 @@ jobs:
         run: |
           mkdir -p artifacts
           find /tmp/gki-build -name "android*.zip" -type f -exec cp {} artifacts/ \;
-          find /tmp/gki-build -name "android*-boot.img" -type f -exec cp {} artifacts/ \;
-          find /tmp/gki-build -name "task_mmu.c" -type f -exec cp {} artifacts/ \;
-          
+          find /tmp/gki-build -name "android*-boot.img" -type f -exec cp {} artifacts/ \;          
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: kernel-${{ github.event.inputs.android_version }}-${{ github.event.inputs.kernel_version }}-${{ github.event.inputs.sub_level }}
           path: artifacts/*
-      
-      - name: Upload artifacts (debug)
-        uses: actions/upload-artifact@v7
-        with:
-          name: dbg-${{ github.event.inputs.android_version }}-${{ github.event.inputs.kernel_version }}-${{ github.event.inputs.sub_level }}
-          path: artifacts/task_mmu.c
 
       - name: Generate checksums
         run: |
