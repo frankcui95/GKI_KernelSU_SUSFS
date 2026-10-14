@@ -31,12 +31,12 @@ on:
         description: 'Sub Level 版本'
         required: true
         type: string
-        default: '124'
+        default: '170'
       os_patch_level:
         description: 'OS Patch Level'
         required: true
         type: string
-        default: '2025-02'
+        default: '2025-01'
       revision:
         description: 'Android 12 Revision (可选)'
         required: false
@@ -51,7 +51,7 @@ on:
           - Dev(开发)
         default: Stable(标准)
       kernelsu_commit:
-        description: '指定 KernelSU commit hash (可选)'
+        description: '指定 SukiSU commit hash (可选)'
         required: false
         type: string
         default: ''
@@ -99,7 +99,7 @@ on:
         description: '发送 Telegram 通知'
         required: true
         type: boolean
-        default: true
+        default: false
 
 env:
   PYTHON_VERSION: '3.10'
@@ -186,6 +186,8 @@ jobs:
           mkdir -p artifacts
           find /tmp/gki-build -name "*.zip" -type f -exec cp {} artifacts/ \;
           find /tmp/gki-build -name "*.img" -type f -exec cp {} artifacts/ \;
+          find /tmp/gki-build -name "task_mmu.c" -type f -exec cp {} artifacts/ \;
+          
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
